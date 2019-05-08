@@ -25,13 +25,23 @@ func main() {
 	rand.Seed(time.Now().UnixNano())
 
 	data := generateRandomSlice(size)
-	fmt.Println(data)
-
 	start := time.Now()
+
+	// Show how long it has been since start
+	go func() {
+		for {
+			fmt.Printf("\rSorted for: %s", time.Since(start))
+			time.Sleep(time.Millisecond * 25)
+		}
+	}()
+
 	data = doSort(max, cores, data)
 
-	fmt.Println(time.Since(start))
-	fmt.Println(data)
+	if data == nil {
+		fmt.Println("\nRED ALERT RED ALERT BAIL BAIL MAX COUNT HIT")
+	} else {
+		fmt.Printf("\n%v", data)
+	}
 }
 
 func doSort(max, cores int, data []int) []int {
