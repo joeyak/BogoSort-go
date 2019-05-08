@@ -18,6 +18,10 @@ func main() {
 	flag.IntVar(&cores, "cores", 1, "number of goroutines to use")
 	flag.Parse()
 
+	if max == 0 {
+		max = math.MaxInt32
+	}
+
 	rand.Seed(time.Now().UnixNano())
 
 	data := generateRandomSlice(size)
