@@ -7,13 +7,15 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"sync"
 	"time"
 )
 
 func main() {
-	var size, max int
+	var size, max, cores int
 	flag.IntVar(&size, "size", 8, "size of slice to sort")
 	flag.IntVar(&max, "max", 1000000, "max iterations to sort")
+	flag.IntVar(&cores, "cores", 1, "number of goroutines to use")
 	flag.Parse()
 
 	rand.Seed(time.Now().UnixNano())
@@ -22,29 +24,38 @@ func main() {
 	fmt.Println(data)
 
 	start := time.Now()
-	data = doSort(max, data)
+	data = doSort(max, cores, data)
 
 	fmt.Println(time.Since(start))
 	fmt.Println(data)
 }
 
-func doSort(max int, data []int) []int {
-	var count int
+func doSort(max, cores int, data []int) []int {
+	// Don't you love struct channels. I love them 💜!
+	// 😢 I didn't get to use the struct channels because
+	// returning early solved the problem
+	ch := make(chan []int)
+	var wg sync.WaitGroup
 
-	for !checkSort(data) {
-		count++
-		if count > max {
-			// According to the original author, just give up
-			// instead of calling sort.Ints()...it could be so simple
-			fmt.Println("\nRED ALERT RED ALERT BAIL BAIL")
-			break
-		}
-		fmt.Printf("%07d\r", count)
-
-		data = bogoSort(data)
+	for i := 0; i < cores; i++ {
+		wg.Add(1)
+		go func() {
+			for c := 0; c < max; c++ {
+				newData := bogoSort(data)
+				if checkSort(newData) {
+					ch <- newData
+					break
+				}
+			}
+			wg.Done()
+		}()
 	}
 
-	return data
+	go func() {
+		wg.Wait()
+		ch <- nil
+	}()
+	return <-ch
 }
 
 func generateRandomSlice(count int) []int {
